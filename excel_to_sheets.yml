@@ -1,0 +1,66 @@
+name: 📊 Excel → AI → Google Sheets
+
+on:
+  # ── Jadwal otomatis (setiap hari jam 08:00 WIB = 01:00 UTC) ──────────────
+  schedule:
+    - cron: "0 1 * * *"   # Ubah sesuai kebutuhan Anda
+
+  # ── Trigger manual dari tab "Actions" di GitHub ───────────────────────────
+  workflow_dispatch:
+    inputs:
+      worksheet_name:
+        description: "Nama worksheet Google Sheets (opsional)"
+        required: false
+        default: "Sheet1"
+      ai_prompt:
+        description: "Custom AI prompt untuk analisis (opsional)"
+        required: false
+        default: ""
+
+  # ── Trigger otomatis saat file Excel di-push ke repo ──────────────────────
+  push:
+    paths:
+      - "data/input/**.xlsx"
+      - "data/input/**.xls"
+
+jobs:
+  process-excel:
+    name: Proses Excel & Update Sheets
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # 1. Checkout repo
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Setup Python
+      - name: 🐍 Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      # 3. Install dependencies
+      - name: 📦 Install dependencies
+        run: pip install -r requirements.txt
+
+      # 4. Jalankan script
+      - name: 🤖 Proses Excel dengan AI
+        env:
+          ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
+          SPREADSHEET_ID:     ${{ secrets.SPREADSHEET_ID }}
+          GOOGLE_CREDS_JSON:  ${{ secrets.GOOGLE_CREDS_JSON }}
+          WORKSHEET_NAME:     ${{ github.event.inputs.worksheet_name || vars.WORKSHEET_NAME || 'Sheet1' }}
+          INPUT_DIR:          data/input
+          AI_PROMPT:          ${{ github.event.inputs.ai_prompt || vars.AI_PROMPT }}
+        run: python scripts/process_excel.py
+
+      # 5. (Opsional) Hapus file Excel setelah diproses agar tidak diproses ulang
+      # - name: 🗑️ Hapus file Excel yang sudah diproses
+      #   run: |
+      #     git config user.name "github-actions[bot]"
+      #     git config user.email "github-actions[bot]@users.noreply.github.com"
+      #     git rm data/input/*.xlsx data/input/*.xls 2>/dev/null || true
+      #     git commit -m "chore: hapus file Excel yang sudah diproses [skip ci]" || true
+      #     git push || true

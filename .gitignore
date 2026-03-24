@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+build/
+
+# Credentials (JANGAN commit file ini!)
+*.json
+creds/
+service_account*.json
+
+# Data sensitif
+data/input/*.xlsx
+data/input/*.xls
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
